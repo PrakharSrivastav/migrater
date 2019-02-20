@@ -1,0 +1,28 @@
+source: # source should either be of type file or db
+  file:
+    type: 
+    path: 
+    seperator: 
+  db: # chose one between table and sql. Other fields are mandatory
+    type: pgsql
+    user: dup_user
+    pass: example
+    host: 192.168.37.49
+    port: 5432
+    schema: dup_user
+    table: "stg_sunnfjordenergi_meter_data_csv"
+    sql:  
+    
+target: # can be a table in database or file type
+  file:
+    type:
+    path:
+    seperator:
+  db:
+    type: pgsql
+    user: dup_user
+    pass: example
+    host: 192.168.37.49
+    port: 5432
+    schema: dup_user
+    table: "meter_data_csv"

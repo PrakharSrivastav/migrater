@@ -1,0 +1,38 @@
+source: # source should either be of type file or db
+  file:
+    # type of file (csv , xml , json)
+    type: 
+    # path for the file  
+    path:
+    # in case of csv file, provide the seperator
+    seperator:
+  db: # chose one between table and sql. Other fields are mandatory
+    # database type
+    type:
+    # username
+    user:
+    # password
+    pass:
+    # hostname for the database
+    host:
+    # port to connect to
+    port:
+    # database or schema
+    database:
+    # provide table name if you want to dump data completly from a table
+    table:
+    # if you want to use a sql as source instead of table name
+    sql:  
+    
+target: # can be a table in database or file type
+  file:
+    type:
+    path:
+    seperator:
+  db:
+    type:
+    user:
+    pass:
+    host:
+    database:
+    table:
