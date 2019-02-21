@@ -23,7 +23,7 @@ type Source struct {
 	DBPort        string
 	DBPass        string
 	DBSQL         string
-	SourceType    string
+	SourceType    StoreType
 }
 
 func (s *Source) Validate() (bool, error) {
@@ -49,7 +49,7 @@ func (s *Source) Validate() (bool, error) {
 		if err != nil { // any other File error
 			return false, err
 		}
-		s.SourceType = "File"
+		s.SourceType = FileType
 		return true, nil
 	}
 
@@ -72,18 +72,18 @@ func (s *Source) Validate() (bool, error) {
 		(s.DBSQL != "" && s.DBTable != "") {
 		return false, errors.New("For database, either provide source.DB.table OR source.table.sql")
 	}
-	s.SourceType = "DB"
+	s.SourceType = DBType
 	return true, nil
 }
 
-func (s *Source) Init() (string, *os.File, *sql.DB, error) {
-	if s.SourceType == "file" {
+func (s *Source) Init() (*os.File, *sql.DB, error) {
+	if s.SourceType == FileType {
 		f, err := os.Open(s.FilePath)
 		if err != nil {
 			f.Close()
-			return s.SourceType, nil, nil, err
+			return nil, nil, err
 		}
-		return s.SourceType, f, nil, nil
+		return f, nil, nil
 	}
 
 	switch s.DBType {
@@ -98,15 +98,15 @@ func (s *Source) Init() (string, *os.File, *sql.DB, error) {
 
 		db, err := sql.Open("postgres", psqlInfo)
 		if err != nil {
-			return s.SourceType, nil, nil, err
+			return nil, nil, err
 		}
 		err = db.Ping()
 		if err != nil {
-			return s.SourceType, nil, nil, err
+			return nil, nil, err
 		}
-		log.Println("Successfully connected!")
-		return s.SourceType, nil, db, nil
+		log.Println("Successfully connected!", s.SourceType)
+		return nil, db, nil
 
 	}
-	return s.SourceType, nil, nil, errors.New("Invalid database source")
+	return nil, nil, errors.New("Invalid database source")
 }

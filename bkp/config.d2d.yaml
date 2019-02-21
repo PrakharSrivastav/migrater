@@ -15,14 +15,14 @@ source: # source should either be of type file or db
     
 target: # can be a table in database or file type
   file:
-    type: csv
-    path: "test.csv"
-    seperator: ;
-  db:
     type: 
-    user: 
-    pass: 
-    host: 
-    port: 
-    schema: 
-    table: 
+    path: 
+    seperator: 
+  db:
+    type: pgsql
+    user: dup_user
+    pass: example
+    host: 192.168.37.49
+    port: 5432
+    schema: dup_user
+    table: "maalepunkt_data_csv"

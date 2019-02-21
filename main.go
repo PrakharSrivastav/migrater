@@ -7,6 +7,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/PrakharSrivastav/sql-query-builder/qb"
+	"github.com/PrakharSrivastav/sql-query-builder/qb/core"
+
 	"github.com/PrakharSrivastav/migrater/config"
 	"github.com/PrakharSrivastav/migrater/migrate"
 	"github.com/spf13/viper"
@@ -35,17 +38,24 @@ func main() {
 	}
 
 	// initialize source
-	sourceType, sourceFile, sourceDB, err := source.Init()
+	sourceFile, sourceDB, err := source.Init()
 	if err != nil {
 		fmt.Printf("Error initializing source [%v]\n", err)
 		os.Exit(1)
 	}
+
 	// initialize target
-	targetType, targetFile, targetDB, err := target.Init()
+	targetFile, targetDB, err := target.Init()
 	if err != nil {
 		fmt.Printf("Error initializing target [%v]\n", err)
 		os.Exit(1)
 	}
+	builder, err := qb.NewQueryBuilder(core.ANSI)
+	if err != nil {
+		fmt.Printf("Error creating a query builder[%v]\n", err)
+		os.Exit(1)
+	}
+
 	migrater := new(migrate.Migrater)
 	migrater.SourceFile = sourceFile
 	migrater.SourceDB = sourceDB
@@ -54,22 +64,26 @@ func main() {
 	migrater.TargetDB = targetDB
 	migrater.TargetTable = target.DBTable
 	migrater.TargetFile = targetFile
+	migrater.TargetFileType = target.FileType
+	migrater.QB = builder
 
-	if sourceType == "file" && targetType == "file" {
+	if source.SourceType == config.FileType && target.SourceType == config.FileType {
 		migrater.Type = migrate.FileToFile
 	}
-	if sourceType == "file" && targetType == "db" {
+
+	if source.SourceType == config.FileType && target.SourceType == config.DBType {
 		migrater.Type = migrate.FileToDB
 	}
-	if sourceType == "db" && targetType == "db" {
+
+	if source.SourceType == config.DBType && target.SourceType == config.DBType {
 		migrater.Type = migrate.DBToDB
 	}
-	if sourceType == "file" && targetType == "db" {
+
+	if source.SourceType == config.DBType && target.SourceType == config.FileType {
 		migrater.Type = migrate.DBToFile
 	}
 
 	migrater.Migrate()
-	// begin import
 }
 
 func loadFromConfigPath(configPath string) (*config.Source, *config.Target, error) {

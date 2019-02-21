@@ -22,7 +22,7 @@ type Target struct {
 	DBHost        string
 	DBPort        string
 	DBPass        string
-	SourceType    string
+	SourceType    StoreType
 }
 
 func (t *Target) Validate() (bool, error) {
@@ -46,9 +46,18 @@ func (t *Target) Validate() (bool, error) {
 			return false, errors.New("Please provide a valid File path")
 		}
 		if err != nil { // any other File error
+			if os.IsNotExist(err) {
+				var fileHandler *os.File
+				if fileHandler, err = os.Create(t.FilePath); err != nil {
+					return false, err
+				}
+				fileHandler.Close()
+				t.SourceType = FileType
+				return true, nil
+			}
 			return false, err
 		}
-		t.SourceType = "File"
+		t.SourceType = FileType
 		return true, nil
 	}
 
@@ -70,18 +79,20 @@ func (t *Target) Validate() (bool, error) {
 	if t.DBTable == "" {
 		return false, errors.New("Please provide target table ")
 	}
-	t.SourceType = "DB"
+	t.SourceType = DBType
 	return true, nil
 }
 
-func (s *Target) Init() (string, *os.File, *sql.DB, error) {
-	if s.SourceType == "file" {
-		f, err := os.Open(s.FilePath)
+func (s *Target) Init() (*os.File, *sql.DB, error) {
+	fmt.Println(s.SourceType)
+	if s.SourceType == FileType {
+		f, err := os.OpenFile(s.FilePath, os.O_RDWR, 777)
 		if err != nil {
 			f.Close()
-			return s.SourceType, nil, nil, err
+			fmt.Println("Error while target init", err.Error())
+			return nil, nil, err
 		}
-		return s.SourceType, f, nil, nil
+		return f, nil, nil
 	}
 
 	switch s.DBType {
@@ -96,15 +107,15 @@ func (s *Target) Init() (string, *os.File, *sql.DB, error) {
 
 		db, err := sql.Open("postgres", psqlInfo)
 		if err != nil {
-			return s.SourceType, nil, nil, err
+			return nil, nil, err
 		}
 		err = db.Ping()
 		if err != nil {
-			return s.SourceType, nil, nil, err
+			return nil, nil, err
 		}
 		log.Println("Successfully connected!")
-		return s.SourceType, nil, db, nil
+		return nil, db, nil
 
 	}
-	return s.SourceType, nil, nil, errors.New("Invalid database source")
+	return nil, nil, errors.New("Invalid database source")
 }
