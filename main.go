@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"log"
@@ -36,6 +37,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
+	fmt.Println("Init source and target")
 
 	// initialize source
 	sourceFile, sourceDB, err := source.Init()
@@ -57,13 +59,14 @@ func main() {
 	}
 
 	migrater := new(migrate.Migrater)
-	migrater.SourceFile = sourceFile
+	migrater.SourceFile = bufio.NewReader(sourceFile)
 	migrater.SourceDB = sourceDB
 	migrater.SourceTable = source.DBTable
 	migrater.SourceSQL = source.DBSQL
+	migrater.SourceFileType = source.FileType
 	migrater.TargetDB = targetDB
 	migrater.TargetTable = target.DBTable
-	migrater.TargetFile = targetFile
+	migrater.TargetFile = bufio.NewWriter(targetFile)
 	migrater.TargetFileType = target.FileType
 	migrater.QB = builder
 
@@ -87,6 +90,8 @@ func main() {
 }
 
 func loadFromConfigPath(configPath string) (*config.Source, *config.Target, error) {
+	fmt.Println("Loading from the configuraion path")
+
 	var err error
 	// Load configuration files
 	viper.SetConfigName("config")
@@ -112,6 +117,7 @@ func loadFromConfigPath(configPath string) (*config.Source, *config.Target, erro
 		DBSQL:         strings.TrimSpace(viper.GetString("source.db.sql")),
 	}
 
+	fmt.Println("Validating source")
 	if _, err = source.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -129,6 +135,8 @@ func loadFromConfigPath(configPath string) (*config.Source, *config.Target, erro
 		DBSchema:      strings.TrimSpace(viper.GetString("target.db.schema")),
 		DBTable:       strings.TrimSpace(viper.GetString("target.db.table")),
 	}
+	fmt.Println("Validating target")
+
 	if _, err = target.Validate(); err != nil {
 		return nil, nil, err
 	}

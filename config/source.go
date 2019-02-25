@@ -35,6 +35,7 @@ func (s *Source) Validate() (bool, error) {
 		return false, errors.New("Use either source.File.type OR source.DB.type")
 	}
 
+	fmt.Println("Setting file type")
 	if s.FileType != "" {
 		// validate if File seperator is provided for csv Files
 		if strings.ToLower(s.FileType) == "csv" && s.FileSeperator == "" {
@@ -50,6 +51,7 @@ func (s *Source) Validate() (bool, error) {
 			return false, err
 		}
 		s.SourceType = FileType
+		fmt.Println("SourceType set to ", FileType)
 		return true, nil
 	}
 
@@ -73,6 +75,8 @@ func (s *Source) Validate() (bool, error) {
 		return false, errors.New("For database, either provide source.DB.table OR source.table.sql")
 	}
 	s.SourceType = DBType
+	fmt.Println("SourceType set to ", DBType)
+
 	return true, nil
 }
 
@@ -81,6 +85,7 @@ func (s *Source) Init() (*os.File, *sql.DB, error) {
 		f, err := os.Open(s.FilePath)
 		if err != nil {
 			f.Close()
+			fmt.Println("Some error here ", err)
 			return nil, nil, err
 		}
 		return f, nil, nil

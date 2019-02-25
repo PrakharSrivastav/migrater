@@ -1,0 +1,33 @@
+a_beskrivelse,i_fylkenr,i_kommunenr,i_omraadeid,i_postnr,id,k2_fylke,k_levid,k_levnavn,knutepunkt_beskrivelse,knutepunkt_id,kom_kommune,latitude,longitude,lt_aarsforbruk,m_mlrfunk_id,malepunkt_id,mst_ams,mst_fabrikat,mst_fabrikattype,pst_poststed,sl_fase,sl_fordelingsyst,sl_isolasjon,sl_j_l,sl_spenning,sl_tvsn,sl_type,tenant_id,timeavlest
+ <Root>
+   <a_beskrivelse>Fritidshus</a_beskrivelse>
+   <i_fylkenr>14</i_fylkenr>
+   <i_kommunenr>1441</i_kommunenr>
+   <i_omraadeid>11</i_omraadeid>
+   <i_postnr>6750</i_postnr>
+   <id>82cc9613-fa2f-4815-badb-009fc370a2d1</id>
+   <k2_fylke>Sogn og Fjordane</k2_fylke>
+   <k_levid>80000249</k_levid>
+   <k_levnavn>NorgesEnergi AS</k_levnavn>
+   <knutepunkt_beskrivelse>STOKKEVÅG</knutepunkt_beskrivelse>
+   <knutepunkt_id>15750T1</knutepunkt_id>
+   <kom_kommune>Selje</kom_kommune>
+   <latitude>62.055490</latitude>
+   <longitude>5.4666679</longitude>
+   <lt_aarsforbruk>206</lt_aarsforbruk>
+   <m_mlrfunk_id>00-70</m_mlrfunk_id>
+   <malepunkt_id>707057500024952959</malepunkt_id>
+   <mst_ams>0</mst_ams>
+   <mst_fabrikat>KAMSTRUP</mst_fabrikat>
+   <mst_fabrikattype>686-162-UK-40</mst_fabrikattype>
+   <pst_poststed>STADLANDET</pst_poststed>
+   <sl_fase>2</sl_fase>
+   <sl_fordelingsyst>TT</sl_fordelingsyst>
+   <sl_isolasjon>PVC</sl_isolasjon>
+   <sl_j_l>L</sl_j_l>
+   <sl_spenning>230</sl_spenning>
+   <sl_tvsn>25</sl_tvsn>
+   <sl_type>AL</sl_type>
+   <tenant_id>SunnFjordEnergi</tenant_id>
+   <timeavlest>N</timeavlest>
+ </Root>

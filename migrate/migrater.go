@@ -5,38 +5,48 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"sort"
 	"strings"
 
 	"github.com/PrakharSrivastav/sql-query-builder/qb/builder"
+	"github.com/clbanning/mxj"
 
 	"github.com/PrakharSrivastav/sql-query-builder/qb/core"
 )
 
+// MigrationType determines the type of migration to execute between source and target
 type MigrationType int
 
 const (
+	// FileToFile migrates from source file to target file
 	FileToFile MigrationType = iota + 1
+	// FileToDB migrates from source file to target db
 	FileToDB
+	// DBToDB migrates from source db to target db
 	DBToDB
+	// DBToFile migrates from source db to target file
 	DBToFile
 )
 
+// Migrater is the basic structure that holds the internal source and target information
 type Migrater struct {
-	SourceFile     *os.File
-	TargetFile     *os.File
-	TargetFileType string
 	SourceDB       *sql.DB
-	SourceTable    string
 	SourceSQL      string
+	SourceFile     *bufio.Reader
+	SourceTable    string
+	SourceFileType string
 	TargetDB       *sql.DB
+	TargetFile     *bufio.Writer
 	TargetTable    string
+	TargetFileType string
 	Type           MigrationType
 	QB             *core.SQL
 }
 
+// Migrate performs the migration based on the migration Type
 func (m *Migrater) Migrate() {
 	defer m.cleanUp()
 	switch m.Type {
@@ -58,38 +68,90 @@ func (m *Migrater) cleanUp() {
 		m.SourceDB.Close()
 	}
 	if m.SourceFile != nil {
-		m.SourceFile.Close()
+		m.SourceFile = nil
 	}
 	if m.TargetDB != nil {
 		m.TargetDB.Close()
 	}
 	if m.TargetFile != nil {
-		m.TargetFile.Close()
+		m.TargetFile = nil
 	}
 }
-func (m *Migrater) migrateF2F() { fmt.Println("migrating F2F") }
+func (m *Migrater) migrateF2F() {
+	fmt.Println("migrating F2F")
+
+	if m.SourceFileType == "csv" && m.TargetFileType == "xml" {
+		m.csvToXML()
+	}
+
+	if m.SourceFileType == "xml" && m.TargetFileType == "csv" {
+		m.xmlToCSV()
+	}
+
+}
+
+func (m *Migrater) xmlToCSV() {
+	fmt.Println("migrating to xml to csv")
+	var mp map[string]interface{}
+	var err error
+	// mp, err = mxj.NewMapXml(m.SourceFile)
+
+	// m.SourceFile.ReadLine(m.SourceFile){
+
+	// }
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(mp)
+}
+
+func (m *Migrater) csvToXML() {
+	fmt.Println("migrating from csv to xml")
+	reader := csv.NewReader(m.SourceFile)
+	var err error
+	record := []string{}
+	// read the header first
+	if record, err = reader.Read(); err != nil || err == io.EOF {
+		fmt.Println("Error reading from source")
+		panic(err.Error())
+	}
+	columns := record
+	// sort.Strings(columns)
+	xmlTemp := map[string]interface{}{}
+	xmlData := []map[string]interface{}{}
+	for {
+		record, err = reader.Read()
+		if err == io.EOF || err != nil {
+			fmt.Println("Error reading from csv")
+			if len(xmlData) > 0 {
+				m.writeXML(xmlData)
+			}
+			break
+		}
+		for i := range record {
+			xmlTemp[columns[i]] = record[i]
+		}
+		xmlData = append(xmlData, xmlTemp)
+		xmlTemp = map[string]interface{}{}
+		// check the length
+		if len(xmlData) == 1000 {
+			m.writeXML(xmlData)
+			xmlData = []map[string]interface{}{}
+		}
+	}
+}
 func (m *Migrater) migrateF2D() { fmt.Println("migrating F2D") }
 func (m *Migrater) migrateD2F() {
 	var err error
 	var selectSQL string
 	var rows *sql.Rows
 	var cols []string
-	switch m.SourceSQL {
-	case "":
-		selectSQL = m.QB.Reader.Select("*").From(m.SourceTable).Limit(1).Build()
-	default:
-		selectSQL = m.SourceSQL + "LIMIT 1"
-	}
-	if rows, err = m.SourceDB.Query(selectSQL); err != nil {
+	if cols, err = m.getColumnsFromSourceTable(); err != nil {
 		fmt.Println(err)
 	}
-	for rows.Next() {
-		if cols, err = rows.Columns(); err != nil {
-			fmt.Println(err)
-		}
-	}
-	rows.Close()
 	sort.Strings(cols)
+
 	switch m.SourceSQL {
 	case "":
 		selectSQL = m.QB.Reader.Select(strings.Join(cols, ",")).From(m.SourceTable).Build()
@@ -101,15 +163,12 @@ func (m *Migrater) migrateD2F() {
 	}
 	defer rows.Close()
 
-	writer := bufio.NewWriter(m.TargetFile)
-	csvWriter := csv.NewWriter(writer)
-	switch m.TargetFileType {
-	case "csv":
-		m.writeCSV(csvWriter, [][]string{cols})
-	}
+	var csvData [][]string
+	var csvTemp []string
+	csvData = append(csvData, cols)
 
-	var data [][]string
-	var temp []string
+	xmlData := []map[string]interface{}{}
+	xmlTemp := map[string]interface{}{}
 	for rows.Next() {
 		columns := make([]interface{}, len(cols))
 		columnPointers := make([]interface{}, len(cols))
@@ -120,37 +179,85 @@ func (m *Migrater) migrateD2F() {
 			fmt.Println(err)
 		}
 
-		for i := range cols {
-			val := columnPointers[i].(*interface{})
-
-			switch (*val).(type) {
-			case []uint8:
-				str := string((*val).([]byte))
-				temp = append(temp, str)
-			default:
-				temp = append(temp, (*val).(string))
+		switch m.TargetFileType {
+		case "csv":
+			for i := range cols {
+				val := columnPointers[i].(*interface{})
+				switch (*val).(type) {
+				case []uint8:
+					csvTemp = append(csvTemp, string((*val).([]byte)))
+				default:
+					csvTemp = append(csvTemp, (*val).(string))
+				}
+			}
+			csvData = append(csvData, csvTemp)
+			csvTemp = []string{}
+			if len(csvData) == 100 {
+				fmt.Println("Dumping 1000 records")
+				csv.NewWriter(m.TargetFile).WriteAll(csvData)
+				csvData = [][]string{}
+			}
+		case "xml":
+			for i := range cols {
+				// value := v
+				val := columnPointers[i].(*interface{})
+				switch (*val).(type) {
+				case []uint8:
+					xmlTemp[cols[i]] = string((*val).([]byte))
+				default:
+					xmlTemp[cols[i]] = (*val).(string)
+				}
+			}
+			xmlData = append(xmlData, xmlTemp)
+			xmlTemp = map[string]interface{}{}
+			if len(xmlData) == 100 {
+				fmt.Println("writing xml")
+				m.writeXML(xmlData)
+				xmlData = []map[string]interface{}{}
 			}
 		}
-		data = append(data, temp)
-		temp = []string{}
-		if len(data) == 1000 {
-			fmt.Println("Dumping 1000 records")
-			m.writeCSV(csvWriter, data)
-			data = [][]string{}
-		}
-	}
-	if len(data) > 0 {
-		fmt.Println("Dumping remaining records")
 
+	}
+	if len(csvData) > 1 {
+		fmt.Println("Dumping remaining records")
+		csv.NewWriter(m.TargetFile).WriteAll(csvData)
+	}
+	if len(xmlData) > 0 {
+		fmt.Println("Dumping remaining  xml")
+		m.writeXML(xmlData)
 	}
 }
+func (m *Migrater) writeXML(data []map[string]interface{}) {
 
-func (m *Migrater) writeCSV(w *csv.Writer, data [][]string) {
-	// c.Comma = ';'
-	w.WriteAll(data)
-	if err := w.Error(); err != nil {
-		log.Fatalln("error writing csv:", err)
+	for _, value := range data {
+		if err := mxj.Map(value).XmlIndentWriter(m.TargetFile, "", "  ", "Root"); err != nil {
+			fmt.Println("Error writing xml", err)
+		}
 	}
+	m.TargetFile.Flush()
+}
+
+func (m *Migrater) getColumnsFromSourceTable() ([]string, error) {
+	var selectSQL string
+	var rows *sql.Rows
+	var err error
+	var cols []string
+	switch m.SourceSQL {
+	case "":
+		selectSQL = m.QB.Reader.Select("*").From(m.SourceTable).Limit(1).Build()
+	default:
+		selectSQL = m.SourceSQL + "LIMIT 1"
+	}
+	if rows, err = m.SourceDB.Query(selectSQL); err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		if cols, err = rows.Columns(); err != nil {
+			return nil, err
+		}
+	}
+	rows.Close()
+	return cols, nil
 }
 
 func (m *Migrater) migrateD2D() {

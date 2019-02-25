@@ -1,8 +1,8 @@
 source: # source should either be of type file or db
   file:
-    type: xml
-    path: "p.xml"
-    seperator:
+    type: csv
+    path: "p.csv"
+    seperator: ;
   db: # chose one between table and sql. Other fields are mandatory
     type: 
     user: 
@@ -15,9 +15,9 @@ source: # source should either be of type file or db
     
 target: # can be a table in database or file type
   file:
-    type: csv
-    path: "test.csv"
-    seperator: ","
+    type: xml
+    path: "test.xml"
+    seperator: 
   db:
     type: 
     user: 
